@@ -1,0 +1,7 @@
+.idea
+.cache
+*.pyc
+
+__pycache__/
+sandbox.py
+local_config.py
