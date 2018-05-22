@@ -5,3 +5,4 @@
 __pycache__/
 sandbox.py
 local_config.py
+athletes.csv
