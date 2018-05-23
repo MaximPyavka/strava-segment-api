@@ -11,9 +11,8 @@ class CSVWriterContextManager:
 
     def __enter__(self):
         self.out_file = open(self.csv_file, self.mode, newline=self.new_line)
-        self.writer = csv.DictWriter(self.out_file, delimiter=',', fieldnames=self.field_names)
-        self.writer.writeheader()
-        self.writer.fieldnames = self.field_names
+        self.writer = csv.writer(self.out_file, delimiter=',')
+        self.writer.writerow(self.field_names)
         return self.writer
 
     def __exit__(self, exc_type, exc_value, traceback):

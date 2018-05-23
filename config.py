@@ -1,12 +1,20 @@
-CSV_FIELDNAMES = ('rank', 'athlete_name', 'start_date', 'start_date_local', 'elapsed_time', 'moving_time')
+CSV_FIELDNAMES = ('rank', 'name', 'date', 'pace', 'HR', 'VAM', 'Time')
 
 try:
     from local_config import *
 except ImportError:
     pass
 
-STRAVA_API_KEY = '7ccf3e6508023869334797d22ba8fdace3d52a04'
+AUTH_DATA = {
+    'authenticity_token': '',
+    'email': AUTH_EMAIL,
+    'password': AUTH_PASSWORD,
+    'utf8': '✓',
+    'plan': ''
+}
 
+STRAVA_SESSION = 'https://www.strava.com/session'
+STRAVA_LOGIN = 'https://www.strava.com/login'
 STRAVA_SEGMENT_LEADERBOARD_URL = 'https://www.strava.com/api/v3/segments/{}/leaderboard'
 
 
@@ -61,8 +69,10 @@ class AthletheConfig:
                 'weight_class': cls.validate_weight(weight) if weight is not None else None}
 
 
-ADDITIONAL_HEADERS = {'Authorization': 'Bearer {}'.format(STRAVA_API_KEY),
-                      'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0', }
+ADDITIONAL_HEADERS = {
+    # 'Authorization': 'Bearer {}'.format(STRAVA_API_KEY),
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.90 Safari/537.36',
+}
 
 if __name__ == '__main__':
     print(AthletheConfig.validate_weight(260))
