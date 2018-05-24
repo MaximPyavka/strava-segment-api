@@ -2,7 +2,7 @@ import requests
 from lxml import html
 from operator import itemgetter
 
-from config import ADDITIONAL_HEADERS, STRAVA_SEGMENT_LEADERBOARD_URL, CSV_FIELDNAMES, AthletheConfig, AUTH_DATA, \
+from config import ADDITIONAL_HEADERS, STRAVA_SEGMENT_LEADERBOARD_URL, CSV_FIELDNAMES, AUTH_DATA, \
     STRAVA_LOGIN, STRAVA_SESSION
 from file_handler import CSVWriterContextManager
 
@@ -42,11 +42,11 @@ def check_segment_id(func):
 
     def wrapper(*args, **kwargs):
         segm_id = args[1]
-        try:
-            segm_id = int(segm_id)
-        except ValueError:
-            print('Segm_id value {} is invalid'.format(segm_id))
-        finally:
+        while not segm_id.isdigit():
+            segm_id = input("Please try again, and type valid segment id number...\n")
+            continue
+        else:
+            args = (args[0], segm_id) + args[2:]
             return func(*args, **kwargs)
 
     return wrapper
@@ -113,8 +113,7 @@ class StravaClient:
     @check_segment_id
     def get_leaderboard_by_segment(self, segment_id):
         self.save_headers = dict(self.session.headers)
-        leaders = self.get_leader_html(segment_id)
-        print(leaders)
+        # leaders = self.get_leader_html(segment_id)
 
         params = {
             'filter': 'overall',
@@ -124,35 +123,36 @@ class StravaClient:
         }
 
         self.session.headers = {'Cookie': self.session.headers.get('Cookie')}
-        with CSVWriterContextManager('athletes.csv', CSV_FIELDNAMES) as out_file:
+
+        filename = f'athletes_{segment_id}.csv'
+
+        with CSVWriterContextManager(filename, CSV_FIELDNAMES) as out_file:
             while True:
                 res = self.session.get(f'https://www.strava.com/segments/{segment_id}/leaderboard', params=params)
                 data = self.get_athletes_html(res)
-                for d in data:
-                    if len(d) == 1:
+                for n, d in enumerate(data):
+                    if len(d) == 1 or d is None:
+                        if params['page'] == 1:
+                            print(f'No athletes found for segment ID {segment_id}')
+                        print(f"Done, please check file --> '{filename}'")
                         return
+                    print(f'Searching for athlete number {n+1+(params["page"]-1)*params["per_page"]}...')
                     out_file.writerow(d)
-                params['page'] +=1
+                params['page'] += 1
 
     def get_athletes_html(self, response):
-        parser = html.fromstring(response.text)
-        data = parser.xpath('//table[contains(@class, "table-leaderboard")]//tbody//tr')
-        for d in data:
-            yield [d for d in d.xpath('string(.)').split('\n') if d]
+        if response.status_code == 200:
+            parser = html.fromstring(response.text)
+            data = parser.xpath('//table[contains(@class, "table-leaderboard")]//tbody//tr')
+            if not data:
+                yield (None, )
+            for d in data:
+                yield [d for d in d.xpath('string(.)').split('\n') if d]
+        else:
+            print('No segments found for this Id')
 
     def get_leader_html(self, segment_id):
         res = self.session.get(f'https://www.strava.com/segments/{segment_id}')
         html_body = html.fromstring(res.text)
         leaders = html_body.xpath('//div[@class="result"]//div[@class="athlete"]//text()')
         return leaders
-
-
-if __name__ == '__main__':
-    segm = '7601651'
-    age = None
-    weight = None
-
-    conf = AthletheConfig.validate_params(age=age, weight=weight)
-
-    # client = StravaClient().generate_athletes_to_csv(segment_id=segm, **conf)
-    client = StravaClient().get_leaderboard_by_segment(segm)
